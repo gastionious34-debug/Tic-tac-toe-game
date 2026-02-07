@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Крестики-нолики — уровни сложности</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 30px;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    #status {
+        margin: 10px 0;
+        font-size: 18px;
+    }
+
+    .controls {
+        margin-bottom: 10px;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        gap: 5px;
+    }
+
+    .cell {
+        width: 100px;
+        height: 100px;
+        background: #fff;
+        border: 2px solid #333;
+        font-size: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .cell.disabled {
+        cursor: default;
+        background: #ddd;
+    }
+
+    button, select {
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    button {
+        margin-top: 15px;
+    }
+</style>
+</head>
+<body>
+
+<h1>Крестики-нолики 🎚️</h1>
+
+<div class="controls">
+    Сложность:
+    <select id="difficulty">
+        <option value="easy">Лёгкий</option>
+        <option value="medium" selected>Средний</option>
+        <option value="hard">Сложный</option>
+    </select>
+</div>
+
+<div id="status">Ваш ход: X</div>
+
+<div class="board">
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+</div>
+
+<button onclick="resetGame()">Начать заново</button>
+
+<script>
+const cells = document.querySelectorAll('.cell');
+const statusText = document.getElementById('status');
+const difficultySelect = document.getElementById('difficulty');
+
+const HUMAN = 'X';
+const BOT = 'O';
+
+let board = Array(9).fill('');
+let gameActive = true;
+
+const winPatterns = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+];
+
+cells.forEach((cell, index) => {
+    cell.addEventListener('click', () => humanMove(index));
+});
+
+function humanMove(index) {
+    if (!gameActive || board[index] !== '') return;
+
+    makeMove(index, HUMAN);
+    if (checkEnd(HUMAN)) return;
+
+    statusText.textContent = 'Ход компьютера...';
+    setTimeout(botMove, 300);
+}
+
+function botMove() {
+    let level = difficultySelect.value;
+    let move;
+
+    if (level === 'easy') {
+        move = randomMove();
+    } 
+    else if (level === 'medium') {
+        move = Math.random() < 0.5 ? randomMove() : minimax(board, BOT).index;
+    } 
+    else {
+        move = minimax(board, BOT).index;
+    }
+
+    makeMove(move, BOT);
+    checkEnd(BOT);
+}
+
+function randomMove() {
+    let empty = board
+        .map((v, i) => v === '' ? i : null)
+        .filter(v => v !== null);
+    return empty[Math.floor(Math.random() * empty.length)];
+}
+
+function makeMove(index, player) {
+    board[index] = player;
+    cells[index].textContent = player;
+    cells[index].classList.add('disabled');
+}
+
+function checkEnd(player) {
+    if (checkWin(board, player)) {
+        statusText.textContent = player === HUMAN
+            ? 'Вы победили! 🎉'
+            : 'Компьютер победил 🤖';
+        gameActive = false;
+        return true;
+    }
+
+    if (board.every(cell => cell !== '')) {
+        statusText.textContent = 'Ничья!';
+        gameActive = false;
+        return true;
+    }
+
+    statusText.textContent = 'Ваш ход: X';
+    return false;
+}
+
+function checkWin(bd, player) {
+    return winPatterns.some(pattern =>
+        pattern.every(i => bd[i] === player)
+    );
+}
+
+/* ===== MINIMAX ===== */
+function minimax(newBoard, player) {
+    let empty = newBoard
+        .map((v, i) => v === '' ? i : null)
+        .filter(v => v !== null);
+
+    if (checkWin(newBoard, HUMAN)) return { score: -10 };
+    if (checkWin(newBoard, BOT)) return { score: 10 };
+    if (empty.length === 0) return { score: 0 };
+
+    let moves = [];
+
+    for (let i = 0; i < empty.length; i++) {
+        let move = {};
+        move.index = empty[i];
+        newBoard[empty[i]] = player;
+
+        let result = minimax(
+            newBoard,
+            player === BOT ? HUMAN : BOT
+        );
+        move.score = result.score;
+
+        newBoard[empty[i]] = '';
+        moves.push(move);
+    }
+
+    let bestMove;
+    if (player === BOT) {
+        let bestScore = -Infinity;
+        moves.forEach((m, i) => {
+            if (m.score > bestScore) {
+                bestScore = m.score;
+                bestMove = i;
+            }
+        });
+    } else {
+        let bestScore = Infinity;
+        moves.forEach((m, i) => {
+            if (m.score < bestScore) {
+                bestScore = m.score;
+                bestMove = i;
+            }
+        });
+    }
+
+    return moves[bestMove];
+}
+
+function resetGame() {
+    board.fill('');
+    cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('disabled');
+    });
+    gameActive = true;
+    statusText.textContent = 'Ваш ход: X';
+}
+</script>
+
+</body>
+</html>
