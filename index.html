@@ -5,305 +5,282 @@
 <title>Крестики-нолики</title>
 
 <style>
-*{box-sizing:border-box}
+/* ===== ТЕМЫ ===== */
+body.dark{
+    background:#1e1e2f;
+    color:#ffffff;
+}
+body.light{
+    background:#f2f2f2;
+    color:#000000;
+}
 
+/* ===== ОСНОВА ===== */
 body{
-    font-family:'Segoe UI',Arial,sans-serif;
-    background:linear-gradient(135deg,#667eea,#764ba2);
-    min-height:100vh;
+    margin:0;
+    font-family:Arial, sans-serif;
     display:flex;
     justify-content:center;
     align-items:center;
+    height:100vh;
 }
 
-.wrapper{
-    display:flex;
-    gap:20px;
-}
-
-.container{
+.app{
+    background:inherit;
+    border:2px solid currentColor;
+    padding:16px;
+    border-radius:12px;
     width:340px;
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 20px 40px rgba(0,0,0,.2);
 }
 
-.side-panel{
-    width:230px;
-    background:#ffffffdd;
-    padding:15px;
-    border-radius:12px;
-    box-shadow:0 10px 25px rgba(0,0,0,.15);
-}
-
-h1,h2{text-align:center;margin-bottom:10px}
-p{text-align:center;font-size:14px}
-
-input,select,button{
+/* ===== КНОПКИ ===== */
+button, select{
     width:100%;
-    padding:10px;
+    padding:8px;
     margin:6px 0;
-    border-radius:6px;
-    border:1px solid #ccc;
     font-size:14px;
+    cursor:pointer;
 }
 
 button{
-    background:#667eea;
-    color:#fff;
+    background:#6c7cff;
+    color:white;
     border:none;
-    cursor:pointer;
 }
 
+/* ===== СЧЁТ ===== */
+.score{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    margin:6px 0;
+}
+
+/* ===== ПОЛЕ ===== */
 .board{
     display:grid;
-    grid-template-columns:repeat(3,90px);
+    grid-template-columns:repeat(3,100px);
     gap:8px;
     justify-content:center;
-    margin:15px 0;
+    margin:12px 0;
+    cursor:pointer; /* 🔑 */
 }
 
 .cell{
-    width:90px;height:90px;
-    background:#f5f5f5;
-    border-radius:10px;
-    font-size:42px;
+    width:100px;
+    height:100px;
+    background:#ffffff;
+    color:#000000;
+    font-size:48px;
     display:flex;
     align-items:center;
     justify-content:center;
-    cursor:pointer;
+    user-select:none;
+    cursor:pointer !important; /* 🔑 */
+    border:2px solid #000;
 }
 
-.cell.disabled{
+body.dark .cell{
+    background:#ffffff;
+    color:#000000;
+}
+
+.cell:hover{
     background:#ddd;
-    cursor:default;
 }
 
-#status{text-align:center;margin:8px 0;font-size:16px}
-.player{text-align:center;font-size:14px}
-
-.accounts-list{
-    margin-top:10px;
-    max-height:320px;
-    overflow-y:auto;
-    font-size:14px;
+.cell.win{
+    background:#8bff9a;
+    animation:pulse .5s infinite alternate;
 }
 
-.accounts-list li{
-    margin-bottom:4px;
+@keyframes pulse{
+    from{transform:scale(1)}
+    to{transform:scale(1.08)}
 }
 
-.you{
-    font-weight:bold;
-    color:#667eea;
+#status{
+    text-align:center;
+    margin:6px 0;
 }
-
-.hidden{display:none}
 </style>
 </head>
-<body>
+<body class="dark">
 
-<div class="wrapper">
+<div class="app">
 
-<!-- ИГРА -->
-<div class="container">
+<h2 style="text-align:center">Крестики-нолики</h2>
 
-<div id="registerBlock">
-    <h2>Регистрация</h2>
-    <p><strong>Я прошу пройти регистрацию, чтобы знать, кто играет в мою игру.</strong></p>
-    <input id="firstName" placeholder="Имя">
-    <input id="lastName" placeholder="Фамилия">
-    <button onclick="register()">Зарегистрироваться</button>
+<select id="mode">
+    <option value="bot">Игрок vs Компьютер</option>
+    <option value="pvp">Игрок vs Игрок</option>
+</select>
+
+<select id="difficulty">
+    <option value="easy">Лёгкий</option>
+    <option value="medium">Средний</option>
+    <option value="hard" selected>Сложный</option>
+</select>
+
+<button onclick="toggleTheme()">🌙 / ☀️ Тема</button>
+
+<div class="score">
+    <div>X: <span id="sx">0</span></div>
+    <div>O: <span id="so">0</span></div>
+    <div>Ничьи: <span id="sd">0</span></div>
 </div>
 
-<div id="gameBlock" class="hidden">
-    <h1>Крестики-нолики 🎮</h1>
+<div id="status">Ход: X</div>
 
-    <div class="player">
-        Игрок: <strong id="playerName"></strong>
-    </div>
-
-    <select id="difficulty">
-        <option value="easy">Лёгкий</option>
-        <option value="medium">Средний</option>
-        <option value="hard" selected>Сложный</option>
-    </select>
-
-    <div id="status">Ваш ход: X</div>
-
-    <div class="board">
-        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
-        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
-        <div class="cell"></div><div class="cell"></div><div class="cell"></div>
-    </div>
-
-    <button onclick="resetGame()">Начать заново</button>
+<div class="board">
+    <div class="cell" data-i="0"></div>
+    <div class="cell" data-i="1"></div>
+    <div class="cell" data-i="2"></div>
+    <div class="cell" data-i="3"></div>
+    <div class="cell" data-i="4"></div>
+    <div class="cell" data-i="5"></div>
+    <div class="cell" data-i="6"></div>
+    <div class="cell" data-i="7"></div>
+    <div class="cell" data-i="8"></div>
 </div>
+
+<button onclick="resetGame()">Новая игра</button>
 
 </div>
 
-<!-- АККАУНТЫ -->
-<div class="side-panel">
-    <h2>Все аккаунты</h2>
-    <div class="accounts-list">
-        <ul id="accountsList"></ul>
-    </div>
-</div>
-
-</div>
+<audio id="click">
+<source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=">
+</audio>
 
 <script>
-/* ===== АККАУНТЫ ===== */
+const cells=document.querySelectorAll(".cell");
+const status=document.getElementById("status");
+const mode=document.getElementById("mode");
+const diff=document.getElementById("difficulty");
+const click=document.getElementById("click");
 
-// демонстрационные "чужие" аккаунты
-const demoAccounts = [
-    "Alex Johnson",
-    "Maria Lopez",
-    "John Smith",
-    "Anna Müller",
-    "Kenji Tanaka",
-    "Olivia Brown",
-    "Lucas Martin"
-];
+let board,turn="X",active=true;
+let score={x:0,o:0,d:0};
 
-// локальные аккаунты
-let localAccounts = JSON.parse(localStorage.getItem("accounts")) || [];
-let currentPlayer = localStorage.getItem("player");
-
-const accountsListEl = document.getElementById("accountsList");
-const registerBlock = document.getElementById("registerBlock");
-const gameBlock = document.getElementById("gameBlock");
-const playerNameEl = document.getElementById("playerName");
-
-/* INIT */
-if (currentPlayer) {
-    startGame(currentPlayer);
-}
-renderAccounts();
-
-/* REGISTRATION */
-function register() {
-    const fn = firstName.value.trim();
-    const ln = lastName.value.trim();
-    if (!fn || !ln) return alert("Введите имя и фамилию");
-
-    const fullName = fn + " " + ln;
-    localStorage.setItem("player", fullName);
-    currentPlayer = fullName;
-
-    if (!localAccounts.includes(fullName)) {
-        localAccounts.push(fullName);
-        localStorage.setItem("accounts", JSON.stringify(localAccounts));
-    }
-
-    startGame(fullName);
-    renderAccounts();
-}
-
-function startGame(name) {
-    registerBlock.classList.add("hidden");
-    gameBlock.classList.remove("hidden");
-    playerNameEl.textContent = name;
-}
-
-function renderAccounts() {
-    accountsListEl.innerHTML = "";
-
-    const allAccounts = [...new Set([...demoAccounts, ...localAccounts])];
-
-    allAccounts.forEach(name => {
-        const li = document.createElement("li");
-        if (name === currentPlayer) {
-            li.innerHTML = `<span class="you">${name} (вы)</span>`;
-        } else {
-            li.textContent = name;
-        }
-        accountsListEl.appendChild(li);
-    });
-}
-
-/* ===== ИГРА ===== */
-const cells = document.querySelectorAll(".cell");
-const statusText = document.getElementById("status");
-const difficulty = document.getElementById("difficulty");
-
-const HUMAN="X", BOT="O";
-let board = Array(9).fill("");
-let active = true;
-
-const wins = [
+const wins=[
 [0,1,2],[3,4,5],[6,7,8],
 [0,3,6],[1,4,7],[2,5,8],
 [0,4,8],[2,4,6]
 ];
 
-cells.forEach((c,i)=>c.onclick=()=>humanMove(i));
+cells.forEach(c=>{
+    c.addEventListener("click",()=>{
+        const i=+c.dataset.i;
+        if(!active||board[i]) return;
+        play();
+        move(i,turn);
+        if(end(turn)) return;
+        turn=turn==="X"?"O":"X";
+        status.textContent="Ход: "+turn;
+        if(mode.value==="bot" && turn==="O"){
+            setTimeout(bot,300);
+        }
+    });
+});
 
-function humanMove(i){
-    if(!active||board[i])return;
-    move(i,HUMAN);
-    if(end(HUMAN))return;
-    statusText.textContent="Ход компьютера...";
-    setTimeout(botMove,300);
-}
-
-function botMove(){
-    let m;
-    if(difficulty.value==="easy") m=random();
-    else if(difficulty.value==="medium") m=Math.random()<0.5?random():minimax(board,BOT).index;
-    else m=Math.random()<0.9?minimax(board,BOT).index:random();
-
-    move(m,BOT);
-    end(BOT);
+function bot(){
+    let i;
+    if(diff.value==="easy") i=random();
+    else if(diff.value==="medium") i=Math.random()<0.5?random():best();
+    else i=Math.random()<0.9?best():random();
+    play();
+    move(i,"O");
+    end("O");
+    turn="X";
+    status.textContent="Ход: X";
 }
 
 function move(i,p){
     board[i]=p;
     cells[i].textContent=p;
-    cells[i].classList.add("disabled");
 }
 
 function end(p){
-    if(wins.some(w=>w.every(i=>board[i]===p))){
-        statusText.textContent=p===HUMAN?"Вы победили! 🎉":"Компьютер победил 🤖";
-        active=false; return true;
+    for(const w of wins){
+        if(w.every(i=>board[i]===p)){
+            w.forEach(i=>cells[i].classList.add("win"));
+            status.textContent="Победа: "+p;
+            score[p.toLowerCase()]++;
+            updateScore();
+            active=false;
+            return true;
+        }
     }
     if(board.every(Boolean)){
-        statusText.textContent="Ничья!";
-        active=false; return true;
+        status.textContent="Ничья";
+        score.d++;
+        updateScore();
+        active=false;
+        return true;
     }
-    statusText.textContent="Ваш ход: X";
     return false;
 }
 
 function random(){
-    let e=board.map((v,i)=>v?"":i).filter(v=>v!=="");
+    const e=board.map((v,i)=>v?null:i).filter(v=>v!==null);
     return e[Math.floor(Math.random()*e.length)];
 }
 
-function minimax(b,p){
-    if(wins.some(w=>w.every(i=>b[i]===HUMAN)))return{score:-10};
-    if(wins.some(w=>w.every(i=>b[i]===BOT)))return{score:10};
-    let e=b.map((v,i)=>v?"":i).filter(v=>v!=="");
-    if(!e.length)return{score:0};
-
-    let m=[];
-    for(let i of e){
-        b[i]=p;
-        let s=minimax(b,p===BOT?HUMAN:BOT).score;
-        b[i]="";
-        m.push({index:i,score:s});
+function best(){
+    let best=-Infinity,move;
+    for(let i=0;i<9;i++){
+        if(board[i]) continue;
+        board[i]="O";
+        let s=minimax(false);
+        board[i]="";
+        if(s>best){best=s;move=i;}
     }
-    return p===BOT?m.reduce((a,b)=>a.score>b.score?a:b):m.reduce((a,b)=>a.score<b.score?a:b);
+    return move;
+}
+
+function minimax(t){
+    if(wins.some(w=>w.every(i=>board[i]==="O"))) return 10;
+    if(wins.some(w=>w.every(i=>board[i]==="X"))) return -10;
+    if(board.every(Boolean)) return 0;
+    let best=t?-Infinity:Infinity;
+    for(let i=0;i<9;i++){
+        if(board[i]) continue;
+        board[i]=t?"O":"X";
+        let s=minimax(!t);
+        board[i]="";
+        best=t?Math.max(best,s):Math.min(best,s);
+    }
+    return best;
 }
 
 function resetGame(){
-    board.fill("");
-    cells.forEach(c=>{c.textContent="";c.classList.remove("disabled")});
+    board=Array(9).fill("");
     active=true;
-    statusText.textContent="Ваш ход: X";
+    turn="X";
+    status.textContent="Ход: X";
+    cells.forEach(c=>{
+        c.textContent="";
+        c.classList.remove("win");
+    });
 }
+
+function updateScore(){
+    sx.textContent=score.x;
+    so.textContent=score.o;
+    sd.textContent=score.d;
+}
+
+function toggleTheme(){
+    document.body.classList.toggle("light");
+    document.body.classList.toggle("dark");
+}
+
+function play(){
+    click.currentTime=0;
+    click.play().catch(()=>{});
+}
+
+resetGame();
 </script>
 
 </body>
