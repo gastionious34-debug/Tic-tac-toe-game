@@ -16,17 +16,36 @@ body{
     align-items:center;
 }
 
+.wrapper{
+    display:flex;
+    gap:20px;
+}
+
 .container{
-    width:360px;
+    width:340px;
     background:#fff;
     padding:20px;
     border-radius:12px;
     box-shadow:0 20px 40px rgba(0,0,0,.2);
-    animation:fade .6s ease;
 }
 
-h1,h2{text-align:center;margin-bottom:10px}
-p{text-align:center;font-size:14px}
+.side-panel{
+    width:220px;
+    background:#ffffffcc;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0 10px 25px rgba(0,0,0,.15);
+}
+
+h1,h2{
+    text-align:center;
+    margin-bottom:10px;
+}
+
+p{
+    text-align:center;
+    font-size:14px;
+}
 
 input,select,button{
     width:100%;
@@ -42,11 +61,7 @@ button{
     color:#fff;
     border:none;
     cursor:pointer;
-    transition:.15s;
 }
-
-button:hover{transform:translateY(-2px)}
-button:active{transform:scale(.97)}
 
 .board{
     display:grid;
@@ -65,50 +80,64 @@ button:active{transform:scale(.97)}
     align-items:center;
     justify-content:center;
     cursor:pointer;
-    transition:.2s;
 }
 
-.cell:hover{background:#eaeaea}
-.cell.disabled{background:#ddd;cursor:default;animation:pop .2s}
+.cell.disabled{
+    background:#ddd;
+    cursor:default;
+}
 
-#status{text-align:center;margin:8px 0;font-size:16px}
-.player{text-align:center;font-size:14px;margin-bottom:5px}
+#status{
+    text-align:center;
+    margin:8px 0;
+    font-size:16px;
+}
+
+.player{
+    text-align:center;
+    font-size:14px;
+}
+
+.accounts-list{
+    margin-top:10px;
+    font-size:14px;
+    max-height:300px;
+    overflow-y:auto;
+}
+
+.accounts-list li{
+    margin-bottom:4px;
+}
 
 .hidden{display:none}
-
-@keyframes fade{
-    from{opacity:0;transform:translateY(20px)}
-    to{opacity:1;transform:translateY(0)}
-}
-@keyframes pop{
-    from{transform:scale(.6)}
-    to{transform:scale(1)}
-}
 </style>
 </head>
 <body>
 
+<div class="wrapper">
+
+<!-- ИГРА / РЕГИСТРАЦИЯ -->
 <div class="container">
 
-<!-- РЕГИСТРАЦИЯ -->
 <div id="registerBlock">
     <h2>Регистрация</h2>
     <p><strong>Я прошу пройти регистрацию, чтобы знать, кто играет в мою игру.</strong></p>
-
     <input id="firstName" placeholder="Имя">
     <input id="lastName" placeholder="Фамилия">
     <button onclick="register()">Зарегистрироваться</button>
 </div>
 
-<!-- ИГРА -->
 <div id="gameBlock" class="hidden">
     <h1>Крестики-нолики 🎮</h1>
-    <div class="player">Игрок: <strong id="playerName"></strong></div>
+
+    <div class="player">
+        Игрок: <strong id="playerName"></strong>
+    </div>
 
     <select id="difficulty">
         <option value="easy">Лёгкий</option>
-        <option value="medium" selected>Средний</option>
-        <option value="hard">Сложный</option>
+        <option value="medium">Средний</option>
+        <option value="hard" selected>Сложный</option>
     </select>
 
     <div id="status">Ваш ход: X</div>
@@ -124,49 +153,70 @@ button:active{transform:scale(.97)}
 
 </div>
 
+<!-- БОКОВАЯ ПАНЕЛЬ АККАУНТОВ -->
+<div class="side-panel">
+    <h2>Аккаунты</h2>
+    <div class="accounts-list">
+        <ul id="accountsList"></ul>
+    </div>
+</div>
+
+</div>
+
 <script>
-/* ====== ЖЁСТКАЯ РЕГИСТРАЦИЯ (1 РАЗ) ====== */
+/* ===== РЕГИСТРАЦИЯ ===== */
+const registerBlock=document.getElementById('registerBlock');
+const gameBlock=document.getElementById('gameBlock');
+const playerNameEl=document.getElementById('playerName');
+const accountsListEl=document.getElementById('accountsList');
 
-// ❗ очищаем старые регистрации
-localStorage.removeItem('accounts');
+let accounts=JSON.parse(localStorage.getItem('accounts'))||[];
+let currentPlayer=localStorage.getItem('player');
 
-const registerBlock = document.getElementById('registerBlock');
-const gameBlock = document.getElementById('gameBlock');
-const playerNameEl = document.getElementById('playerName');
+renderAccounts();
 
-const savedPlayer = localStorage.getItem('player');
-
-if(savedPlayer){
-    startGame(savedPlayer);
+if(currentPlayer){
+    startGame(currentPlayer);
 }
 
 function register(){
-    const fn = firstName.value.trim();
-    const ln = lastName.value.trim();
+    const fn=firstName.value.trim();
+    const ln=lastName.value.trim();
+    if(!fn||!ln)return alert('Введите имя и фамилию');
 
-    if(!fn || !ln){
-        alert('Введите имя и фамилию');
-        return;
+    const fullName=fn+' '+ln;
+    localStorage.setItem('player',fullName);
+
+    if(!accounts.includes(fullName)){
+        accounts.push(fullName);
+        localStorage.setItem('accounts',JSON.stringify(accounts));
     }
 
-    const fullName = fn + ' ' + ln;
-    localStorage.setItem('player', fullName);
     startGame(fullName);
+    renderAccounts();
 }
 
 function startGame(name){
     registerBlock.classList.add('hidden');
     gameBlock.classList.remove('hidden');
-    playerNameEl.textContent = name;
+    playerNameEl.textContent=name;
 }
 
-/* ====== ИГРА ====== */
+function renderAccounts(){
+    accountsListEl.innerHTML='';
+    accounts.forEach(a=>{
+        const li=document.createElement('li');
+        li.textContent=a;
+        accountsListEl.appendChild(li);
+    });
+}
 
-const cells = document.querySelectorAll('.cell');
-const statusText = document.getElementById('status');
-const difficulty = document.getElementById('difficulty');
+/* ===== ИГРА ===== */
+const cells=document.querySelectorAll('.cell');
+const statusText=document.getElementById('status');
+const difficulty=document.getElementById('difficulty');
 
-const HUMAN='X', BOT='O';
+const HUMAN='X',BOT='O';
 let board=Array(9).fill('');
 let active=true;
 
@@ -188,9 +238,12 @@ function humanMove(i){
 
 function botMove(){
     let m;
-    if(difficulty.value==='easy')m=random();
-    else if(difficulty.value==='medium')m=Math.random()<.5?random():minimax(board,BOT).index;
-    else m=minimax(board,BOT).index;
+    const lvl=difficulty.value;
+
+    if(lvl==='easy') m=random();
+    else if(lvl==='medium') m=Math.random()<0.5?random():minimax(board,BOT).index;
+    else m=Math.random()<0.9?minimax(board,BOT).index:random();
+
     move(m,BOT);
     end(BOT);
 }
